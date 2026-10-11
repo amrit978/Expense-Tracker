@@ -1,4 +1,5 @@
 """Expense Tracker - a small Flask + SQLite web app."""
+import os
 import sqlite3
 from datetime import date
 from pathlib import Path
@@ -6,11 +7,19 @@ from pathlib import Path
 from flask import Flask, g, redirect, render_template, request, url_for, flash
 
 BASE_DIR = Path(__file__).resolve().parent
-DATABASE = BASE_DIR / "expenses.db"
+
+# Vercel's filesystem is read-only except /tmp, so the database must live there.
+# Data in /tmp is temporary: it resets when the serverless function restarts.
+# For permanent storage, use a hosted database (see README) or a host with a disk.
+if os.environ.get("VERCEL"):
+    DATABASE = Path("/tmp") / "expenses.db"
+else:
+    DATABASE = BASE_DIR / "expenses.db"
+
 CATEGORIES = ["Food", "Transport", "Shopping", "Bills", "Health", "Entertainment", "Other"]
 
 app = Flask(__name__)
-app.config["SECRET_KEY"] = "change-this-in-production"
+app.config["SECRET_KEY"] = os.environ.get("SECRET_KEY", "change-this-in-production")
 
 
 def get_db():
