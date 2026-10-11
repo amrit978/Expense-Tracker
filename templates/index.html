@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Expense Tracker</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+  <header class="topbar">
+    <h1>Expense Tracker</h1>
+    <p>Track where your money goes.</p>
+  </header>
+
+  <main class="container">
+    {% with messages = get_flashed_messages(with_categories=true) %}
+      {% for category, message in messages %}
+        <div class="flash {{ category }}">{{ message }}</div>
+      {% endfor %}
+    {% endwith %}
+
+    <section class="card">
+      <h2>Add expense</h2>
+      <form action="{{ url_for('add') }}" method="post" class="add-form">
+        <input type="text" name="title" placeholder="What did you spend on?" required>
+        <input type="number" name="amount" placeholder="Amount" min="0.01" step="0.01" required>
+        <select name="category">
+          {% for c in categories %}<option>{{ c }}</option>{% endfor %}
+        </select>
+        <input type="date" name="spent_on" value="{{ today }}">
+        <button type="submit">Add</button>
+      </form>
+    </section>
+
+    <section class="card summary">
+      <div>
+        <span class="label">Total</span>
+        <span class="total">₹{{ '%.2f'|format(total) }}</span>
+      </div>
+      <form method="get" class="filters">
+        <select name="category" onchange="this.form.submit()">
+          <option value="">All categories</option>
+          {% for c in categories %}
+            <option {% if c == selected_category %}selected{% endif %}>{{ c }}</option>
+          {% endfor %}
+        </select>
+        <input type="month" name="month" value="{{ selected_month }}" onchange="this.form.submit()">
+        <a href="{{ url_for('index') }}" class="reset">Reset</a>
+      </form>
+    </section>
+
+    {% if by_category %}
+    <section class="card">
+      <h2>By category</h2>
+      {% for name, amt in by_category %}
+        <div class="bar-row">
+          <span class="bar-name">{{ name }}</span>
+          <div class="bar-track"><div class="bar-fill" style="width: {{ (amt / biggest * 100)|round }}%"></div></div>
+          <span class="bar-amt">₹{{ '%.2f'|format(amt) }}</span>
+        </div>
+      {% endfor %}
+    </section>
+    {% endif %}
+
+    <section class="card">
+      <h2>Expenses</h2>
+      {% if expenses %}
+      <table>
+        <thead><tr><th>Date</th><th>Title</th><th>Category</th><th class="num">Amount</th><th></th></tr></thead>
+        <tbody>
+          {% for e in expenses %}
+          <tr>
+            <td>{{ e.spent_on }}</td>
+            <td>{{ e.title }}</td>
+            <td><span class="tag">{{ e.category }}</span></td>
+            <td class="num">₹{{ '%.2f'|format(e.amount) }}</td>
+            <td>
+              <form action="{{ url_for('delete', expense_id=e.id) }}" method="post">
+                <button class="danger" type="submit" aria-label="Delete {{ e.title }}">Delete</button>
+              </form>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+      {% else %}
+        <p class="empty">No expenses yet. Add your first one above.</p>
+      {% endif %}
+    </section>
+  </main>
+</body>
+</html>
